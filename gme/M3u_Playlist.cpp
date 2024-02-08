@@ -551,15 +551,7 @@ blargg_err_t M3u_Playlist::parse_vgmstream_()
 			// 	count++;
 			// else if ( !first_error_ )
 			// 	first_error_ = line;
-			entries[count].name = temp_entry.name;
-			entries[count].file = temp_entry.file;
-			entries[count].decimal_track = temp_entry.decimal_track;
-			entries[count].track = temp_entry.track;
-			entries[count].length = temp_entry.length;
-			entries[count].intro = temp_entry.intro;
-			entries[count].fade = temp_entry.fade;
-			entries[count].loop = temp_entry.loop;
-			entries[count].repeat = temp_entry.repeat;
+			memcpy(&entries[count], &temp_entry, sizeof(temp_entry));
 			count++;
 	
 			// reinitialize temp entry values
