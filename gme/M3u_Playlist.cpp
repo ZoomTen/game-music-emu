@@ -16,6 +16,7 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
+#include "blargg_common.h"
 #include "blargg_source.h"
 
 // gme functions defined here to avoid linking in m3u code unless it's used
@@ -52,9 +53,21 @@ blargg_err_t Gme_File::load_m3u( const char* path ) { return load_m3u_( playlist
 
 blargg_err_t Gme_File::load_m3u( Data_Reader& in )  { return load_m3u_( playlist.load( in ) ); }
 
+blargg_err_t Gme_File::load_vgmstream_m3u( const char* path ) { return load_m3u_( playlist.load_vgmstream( path ) ); }
+
+blargg_err_t Gme_File::load_vgmstream_m3u( Data_Reader& in )  { return load_m3u_( playlist.load_vgmstream( in ) ); }
+
 gme_err_t gme_load_m3u( Music_Emu* me, const char* path ) { return me->load_m3u( path ); }
 
 gme_err_t gme_load_m3u_data( Music_Emu* me, const void* data, long size )
+{
+	Mem_File_Reader in( data, size );
+	return me->load_m3u( in );
+}
+
+gme_err_t gme_load_vgmstream_m3u( Music_Emu* me, const char* path ) { return me->load_vgmstream_m3u( path ); }
+
+gme_err_t gme_load_vgmstream_m3u_data( Music_Emu* me, const void* data, long size )
 {
 	Mem_File_Reader in( data, size );
 	return me->load_m3u( in );
@@ -400,6 +413,177 @@ static void parse_comment( char* in, M3u_Playlist::info_t& info, char *& last_co
 		info.title = field;
 }
 
+static void parse_comment_vgmstream( 
+	char* in, M3u_Playlist::info_t& info,
+	M3u_Playlist::entry_t& temp_entry,
+	char *& source_file_string,
+	char *& last_comment_value
+){
+	in = skip_white( in + 1 );
+	const char* field = in;
+
+	char first_character = *field;
+	++field;
+	in = (char*)field;
+	while ( *in && *in > ' ' ) in++;
+	*in++ = 0;
+	const char* text = skip_white( in );
+	if ( first_character == '@' )
+	{
+		// global values
+		if ( *text )
+		{
+				 if ( !strcmp( "album"    , field ) ) info.title     = text;
+			else if ( !strcmp( "company"  , field ) ) info.artist    = text;
+			else if ( !strcmp( "year"     , field ) ) info.date      = text;
+			else if ( !strcmp( "artist"   , field ) ) info.composer  = text;
+			else if ( !strcmp( "sequencer", field ) ) info.sequencer = text;
+			else if ( !strcmp( "engineer" , field ) ) info.engineer  = text;
+			else if ( !strcmp( "ripper"   , field ) ) info.ripping   = text;
+			else if ( !strcmp( "source"   , field ) ) source_file_string = (char*) text;
+			else
+				text = 0;
+			if ( text )
+			{
+				last_comment_value = (char*)text;
+				return;
+			}
+		}
+	}
+	else if ( first_character == '%' )
+	{
+		// global values
+		if ( *text )
+		{
+				 if ( !strcmp( "title"    , field ) ) temp_entry.name = text;
+			else if ( !strcmp( "subtune"  , field ) )
+			{
+				in = (char *) text;
+				parse_int_(in, &temp_entry.track);
+				temp_entry.track++;
+			}
+			else if ( !strcmp( "length"  , field ) )
+			{
+				in = (char *) text;
+				parse_time_(in, &temp_entry.length);
+			}
+			else if ( !strcmp( "fade"  , field ) )
+			{
+				in = (char *) text;
+				parse_time_(in, &temp_entry.fade);
+			}
+			else
+				text = 0;
+			if ( text )
+			{
+				last_comment_value = (char*)text;
+				return;
+			}
+		}
+	}
+}
+
+blargg_err_t M3u_Playlist::parse_vgmstream_()
+{
+	info_.title     = "";
+	info_.artist    = "";
+	info_.date      = "";
+	info_.composer  = "";
+	info_.sequencer = "";
+	info_.engineer  = "";
+	info_.ripping   = "";
+	info_.tagging   = "";
+	info_.copyright = "";
+
+	entry_t temp_entry;
+	
+	int const CR = 13;
+	int const LF = 10;
+	
+	data.end() [-1] = LF; // terminate input
+	
+	first_error_ = 0;
+	int line  = 0;
+	int count = 0;
+	char* in  = data.begin();
+	char* last_comment_value = 0;
+
+	char* sourcefstr = nullptr;
+	
+	// initialize temp entry values
+	temp_entry.name = "";
+	temp_entry.file = sourcefstr;
+	temp_entry.decimal_track = true;
+	temp_entry.track = 1;
+	temp_entry.length = 0;
+	temp_entry.intro = 0;
+	temp_entry.fade = 0;
+	temp_entry.loop = 0;
+	temp_entry.repeat = 0;
+
+	while ( in < data.end() )
+	{
+		// find end of line and terminate it
+		line++;
+		char* begin = in;
+		while ( *in != CR && *in != LF )
+		{
+			if ( !*in )
+				return "Not an m3u playlist";
+			in++;
+		}
+		if ( in [0] == CR && in [1] == LF ) // treat CR,LF as a single line
+			*in++ = 0;
+		*in++ = 0;
+		
+		// parse line
+		if ( *begin == '#' )
+		{
+			parse_comment_vgmstream( begin, info_, temp_entry, sourcefstr, last_comment_value );
+			if (sourcefstr != nullptr) temp_entry.file = sourcefstr;
+		}
+		else if ( *begin ) // m3u file entry
+		{
+			if ( (int) entries.size() <= count )
+				RETURN_ERR( entries.resize( count * 2 + 64 ) );
+			
+			// if ( !parse_line( begin, entries [count] ) )
+			// 	count++;
+			// else if ( !first_error_ )
+			// 	first_error_ = line;
+			entries[count].name = temp_entry.name;
+			entries[count].file = temp_entry.file;
+			entries[count].decimal_track = temp_entry.decimal_track;
+			entries[count].track = temp_entry.track;
+			entries[count].length = temp_entry.length;
+			entries[count].intro = temp_entry.intro;
+			entries[count].fade = temp_entry.fade;
+			entries[count].loop = temp_entry.loop;
+			entries[count].repeat = temp_entry.repeat;
+			count++;
+	
+			// reinitialize temp entry values
+			temp_entry.name = "";
+			temp_entry.file = sourcefstr;
+			temp_entry.decimal_track = true;
+			temp_entry.track = 1;
+			temp_entry.length = 0;
+			temp_entry.intro = 0;
+			temp_entry.fade = 0;
+			temp_entry.loop = 0;
+			temp_entry.repeat = 0;
+		}
+		else last_comment_value = 0;
+	}
+	if ( count <= 0 )
+		return "Not an m3u playlist";
+	
+	if ( !(info_.composer [0] | info_.engineer [0] | info_.ripping [0] | info_.tagging [0]) )
+		info_.title = "";
+	
+	return entries.resize( count );
+
+}
 blargg_err_t M3u_Playlist::parse_()
 {
 	info_.title     = "";
@@ -477,11 +661,29 @@ blargg_err_t M3u_Playlist::parse()
 	return err;
 }
 
+blargg_err_t M3u_Playlist::parse_vgmstream()
+{
+	blargg_err_t err = parse_vgmstream_();
+	if ( err )
+	{
+		entries.clear();
+		data.clear();
+	}
+	return err;
+}
+
 blargg_err_t M3u_Playlist::load( Data_Reader& in )
 {
 	RETURN_ERR( data.resize( in.remain() + 1 ) );
 	RETURN_ERR( in.read( data.begin(), data.size() - 1 ) );
 	return parse();
+}
+
+blargg_err_t M3u_Playlist::load_vgmstream( Data_Reader& in )
+{
+	RETURN_ERR( data.resize( in.remain() + 1 ) );
+	RETURN_ERR( in.read( data.begin(), data.size() - 1 ) );
+	return parse_vgmstream();
 }
 
 blargg_err_t M3u_Playlist::load( const char* path )
@@ -491,9 +693,23 @@ blargg_err_t M3u_Playlist::load( const char* path )
 	return load( in );
 }
 
+blargg_err_t M3u_Playlist::load_vgmstream( const char* path )
+{
+	GME_FILE_READER in;
+	RETURN_ERR( in.open( path ) );
+	return load_vgmstream( in );
+}
+
 blargg_err_t M3u_Playlist::load( void const* in, long size )
 {
 	RETURN_ERR( data.resize( size + 1 ) );
 	memcpy( data.begin(), in, size );
 	return parse();
+}
+
+blargg_err_t M3u_Playlist::load_vgmstream( void const* in, long size )
+{
+	RETURN_ERR( data.resize( size + 1 ) );
+	memcpy( data.begin(), in, size );
+	return parse_vgmstream();
 }

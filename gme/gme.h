@@ -111,6 +111,9 @@ BLARGG_EXPORT const char* gme_warning( Music_Emu* );
 /* Load m3u playlist file (must be done after loading music) */
 BLARGG_EXPORT gme_err_t gme_load_m3u( Music_Emu*, const char path [] );
 
+/* Load !tags.m3u format playlist (must be done after loading music) */
+BLARGG_EXPORT gme_err_t gme_load_vgmstream_m3u( Music_Emu*, const char path [] );
+
 /* Clear any loaded m3u playlist and any internal playlist that the music format
 supports (NSFE for example). */
 BLARGG_EXPORT void gme_clear_playlist( Music_Emu* );
@@ -294,6 +297,9 @@ BLARGG_EXPORT gme_err_t gme_load_custom( Music_Emu*, gme_reader_t, long file_siz
 
 /* Load m3u playlist file from memory (must be done after loading music) */
 BLARGG_EXPORT gme_err_t gme_load_m3u_data( Music_Emu*, void const* data, long size );
+
+/* Load !tags.m3u format playlist from memory (must be done after loading music) */
+BLARGG_EXPORT gme_err_t gme_load_vgmstream_m3u_data( Music_Emu*, void const* data, long size );
 
 
 /******** User data ********/

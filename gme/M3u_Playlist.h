@@ -14,6 +14,10 @@ public:
 	blargg_err_t load( Data_Reader& in );
 	blargg_err_t load( void const* data, long size );
 
+	blargg_err_t load_vgmstream( const char* path );
+	blargg_err_t load_vgmstream( Data_Reader& in );
+	blargg_err_t load_vgmstream( void const* data, long size );
+
 	// Line number of first parse error, 0 if no error. Any lines with parse
 	// errors are ignored.
 	int first_error() const { return first_error_; }
@@ -59,6 +63,9 @@ private:
 
 	blargg_err_t parse();
 	blargg_err_t parse_();
+
+	blargg_err_t parse_vgmstream();
+	blargg_err_t parse_vgmstream_();
 };
 
 inline void M3u_Playlist::clear()

@@ -79,6 +79,9 @@ public:
 	// Load an m3u playlist. Must be done after loading main music file.
 	blargg_err_t load_m3u( const char* path );
 	blargg_err_t load_m3u( Data_Reader& in );
+	
+	blargg_err_t load_vgmstream_m3u( const char* path );
+	blargg_err_t load_vgmstream_m3u( Data_Reader& in );
 
 	// Clears any loaded m3u playlist and any internal playlist that the music
 	// format supports (NSFE for example).
