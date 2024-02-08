@@ -118,11 +118,12 @@ gme_err_t Music_Player::load_file(const char* path , bool by_mem)
 	char m3u_path [256 + 5];
 	strncpy( m3u_path, path, 256 );
 	m3u_path [256] = 0;
-	char* p = strrchr( m3u_path, '.' );
+	char* p = strrchr( m3u_path, '/' );
 	if ( !p )
 		p = m3u_path + strlen( m3u_path );
-	strcpy( p, ".m3u" );
-	if ( gme_load_m3u( emu_, m3u_path ) ) { } // ignore error
+	strcpy( p, "/!tags.m3u" );
+	if ( gme_load_vgmstream_m3u( emu_, m3u_path ) ) { } else {
+	} // ignore error
 	
 	return 0;
 }
@@ -152,6 +153,23 @@ gme_err_t Music_Player::start_track( int track )
 		if ( track_info_->length <= 0 )
 			track_info_->length = (long) (2.5 * 60 * 1000);
 		gme_set_fade_msecs( emu_, track_info_->length, 8000 );
+
+
+	printf( "System   : %s\n", track_info_->system );
+	printf( "Game     : %s\n", track_info_->game );
+	printf( "Author   : %s\n", track_info_->author );
+	printf( "Copyright: %s\n", track_info_->copyright );
+	printf( "Comment  : %s\n", track_info_->comment );
+	printf( "Dumper   : %s\n", track_info_->dumper );
+	printf( "Tracks   : %d\n", (int) gme_track_count( emu_ ) );
+	printf( "\n" );
+	printf( "Track    : %d\n", (int) track + 1 );
+	printf( "Name     : %s\n", track_info_->song );
+	printf( "Length   : %ld:%02ld",
+			(long) track_info_->length / 1000 / 60, (long) track_info_->length / 1000 % 60 );
+	if ( track_info_->loop_length != 0 )
+		printf( " (endless)" );
+	printf( "\n\n" );
 		
 		paused = false;
 		sound_start();
