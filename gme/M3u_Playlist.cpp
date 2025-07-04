@@ -502,7 +502,7 @@ blargg_err_t M3u_Playlist::parse_vgmstream_()
 	
 	first_error_ = 0;
 	int line  = 0;
-	int count = 0;
+	int count = 1;
 	char* in  = data.begin();
 	char* last_comment_value = 0;
 
@@ -512,7 +512,7 @@ blargg_err_t M3u_Playlist::parse_vgmstream_()
 	temp_entry.name = "";
 	temp_entry.file = sourcefstr;
 	temp_entry.decimal_track = true;
-	temp_entry.track = 1;
+	temp_entry.track = count;
 	temp_entry.length = 0;
 	temp_entry.intro = 0;
 	temp_entry.fade = 0;
@@ -556,7 +556,7 @@ blargg_err_t M3u_Playlist::parse_vgmstream_()
 			temp_entry.name = "";
 			temp_entry.file = sourcefstr;
 			temp_entry.decimal_track = true;
-			temp_entry.track = 1;
+			temp_entry.track = count;
 			temp_entry.length = 0;
 			temp_entry.intro = 0;
 			temp_entry.fade = 0;
