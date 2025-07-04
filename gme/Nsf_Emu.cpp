@@ -29,14 +29,14 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 #include "blargg_source.h"
 
-int const vrc6_flag  = 0x01;
-int const vrc7_flag  = 0x02;
-int const fds_flag   = 0x04;
-int const mmc5_flag  = 0x08;
-int const namco_flag = 0x10;
-int const fme7_flag  = 0x20;
+static int const vrc6_flag  = 0x01;
+static int const vrc7_flag  = 0x02;
+static int const fds_flag   = 0x04;
+static int const mmc5_flag  = 0x08;
+static int const namco_flag = 0x10;
+static int const fme7_flag  = 0x20;
 
-long const clock_divisor = 12;
+static long const clock_divisor = 12;
 
 using std::min;
 using std::max;
@@ -311,9 +311,6 @@ blargg_err_t Nsf_Emu::init_sound()
 			count += Nes_Vrc7_Apu::osc_count;
 		}
 
-		set_voice_count( count );
-		set_voice_names( &apu_names[0] );
-
 		if ( namco ) namco->volume( adjusted_gain );
 		if ( vrc6  ) vrc6 ->volume( adjusted_gain );
 		if ( fme7  ) fme7 ->volume( adjusted_gain );
@@ -322,6 +319,9 @@ blargg_err_t Nsf_Emu::init_sound()
 		if ( vrc7  ) vrc7 ->volume( adjusted_gain );
 	}
 	#endif
+
+	set_voice_count( count );
+	set_voice_names( &apu_names[0] );
 
 	apu.volume( adjusted_gain );
 

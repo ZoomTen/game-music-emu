@@ -91,11 +91,19 @@ BLARGG_EXPORT int gme_tell( Music_Emu const* );
 /* Number of samples generated since beginning of track */
 BLARGG_EXPORT int gme_tell_samples( Music_Emu const* );
 
+/* Number of milliseconds played since beginning of track (scaled with tempo).
+ * @since 0.6.5 */
+BLARGG_EXPORT int gme_tell_scaled( Music_Emu const* );
+
 /* Seek to new time in track. Seeking backwards or far forward can take a while. */
 BLARGG_EXPORT gme_err_t gme_seek( Music_Emu*, int msec );
 
 /* Equivalent to restarting track then skipping n samples */
 BLARGG_EXPORT gme_err_t gme_seek_samples( Music_Emu*, int n );
+
+/* Seek to new time in track (scaled with tempo).
+ * @since 0.6.5 */
+BLARGG_EXPORT gme_err_t gme_seek_scaled( Music_Emu*, int msec );
 
 
 /******** Informational ********/
@@ -132,16 +140,16 @@ struct gme_info_t
 	int length;			/* total length, if file specifies it */
 	int intro_length;	/* length of song up to looping section */
 	int loop_length;	/* length of looping section */
-	
+
 	/* Length if available, otherwise intro_length+loop_length*2 if available,
 	otherwise a default of 150000 (2.5 minutes). */
 	int play_length;
 
 	/* fade length in milliseconds; -1 if unknown */
 	int fade_length;
-	
+
 	int i5,i6,i7,i8,i9,i10,i11,i12,i13,i14,i15; /* reserved */
-	
+
 	/* empty string ("") if not available */
 	const char* system;
 	const char* game;
@@ -150,7 +158,7 @@ struct gme_info_t
 	const char* copyright;
 	const char* comment;
 	const char* dumper;
-	
+
 	const char *s7,*s8,*s9,*s10,*s11,*s12,*s13,*s14,*s15; /* reserved */
 };
 
@@ -192,7 +200,7 @@ typedef struct gme_equalizer_t
 {
 	double treble; /* -50.0 = muffled, 0 = flat, +5.0 = extra-crisp */
 	double bass;   /* 1 = full bass, 90 = average, 16000 = almost no bass */
-	
+
 	double d2,d3,d4,d5,d6,d7,d8,d9; /* reserved */
 } gme_equalizer_t;
 
@@ -222,7 +230,6 @@ extern BLARGG_EXPORT const gme_type_t
 	gme_nsfe_type,
 	gme_sap_type,
 	gme_spc_type,
-	gme_rsn_type,
 	gme_vgm_type,
 	gme_vgz_type;
 
@@ -289,6 +296,17 @@ BLARGG_EXPORT gme_err_t gme_load_file( Music_Emu*, const char path [] );
 
 /* Load music file from memory into emulator. Makes a copy of data passed. */
 BLARGG_EXPORT gme_err_t gme_load_data( Music_Emu*, void const* data, long size );
+
+/* Load multiple single-track music files from memory into emulator.
+ * @since 0.6.4
+ */
+BLARGG_EXPORT gme_err_t gme_load_tracks( Music_Emu* me,
+                                         void const* data, long* sizes, int count );
+
+/* Return the fixed track count of an emu file type
+ * @since 0.6.4
+ */
+BLARGG_EXPORT int gme_fixed_track_count( gme_type_t );
 
 /* Load music file using custom data reader function that will be called to
 read file data. Most emulators load the entire file in one read call. */

@@ -8,7 +8,6 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libgme
 
-LOCAL_CPP_FEATURES := exceptions
 #LOCAL_SANITIZE := undefined
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/gme
@@ -21,12 +20,9 @@ GME_YM2612_EMU=VGM_YM2612_NUKED
 
 # For zlib compressed formats:
 GME_ZLIB=Y
-# For SPC RSN format (requires unrar library):
-GME_UNRAR=N
 
 LOCAL_CFLAGS := -O2 -Wall \
 	-DBLARGG_LITTLE_ENDIAN=1 \
-	-DBLARGG_BUILD_DLL \
 	-DLIBGME_VISIBILITY \
 	-fwrapv \
 	-fvisibility=hidden \
@@ -35,11 +31,6 @@ LOCAL_CFLAGS := -O2 -Wall \
 ifeq ($(GME_ZLIB),Y)
 LOCAL_CFLAGS += -DHAVE_ZLIB_H
 endif
-ifeq ($(GME_UNRAR),Y)
-LOCAL_CFLAGS += -DRARDLL
-#either RAR_HDR_UNRAR_H or RAR_HDR_DLL_HPP
-LOCAL_CFLAGS += -DRAR_HDR_UNRAR_H
-endif
 
 LOCAL_CPPFLAGS := -std=c++11 \
 	-fvisibility-inlines-hidden
@@ -47,9 +38,6 @@ LOCAL_CPPFLAGS := -std=c++11 \
 LOCAL_LDFLAGS := -Wl,-no-undefined
 ifeq ($(GME_ZLIB),Y)
 LOCAL_LDFLAGS += -lz
-endif
-ifeq ($(GME_UNRAR),Y)
-LOCAL_LDFLAGS += -lunrar
 endif
 
 LOCAL_SRC_FILES := \

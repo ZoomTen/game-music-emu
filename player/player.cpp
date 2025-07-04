@@ -17,8 +17,8 @@ L           Toggle track looping (infinite playback)
 // system header includes
 #define _ISOC99_SOURCE 1
 
-int const scope_width = 1024;
-int const scope_height = 512;
+static int const scope_width = 1024;
+static int const scope_height = 512;
 
 #include "Music_Player.h"
 #include "Audio_Scope.h"
@@ -42,31 +42,31 @@ L           Toggle track looping (infinite playback)
 0           Reset tempo and turn channels back on */
 )";
 
-void handle_error( const char* );
+static void handle_error( const char* );
 
 static bool paused;
 static Audio_Scope* scope;
 static Music_Player* player;
 static short scope_buf [scope_width * 2];
 
-static void init()
+static void init( void )
 {
 	// Start SDL
 	if ( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
 		exit( EXIT_FAILURE );
 	atexit( SDL_Quit );
-	
+
 	// Init scope
-	scope = new Audio_Scope;
+	scope = GME_NEW Audio_Scope;
 	if ( !scope )
 		handle_error( "Out of memory" );
 	std::string err_msg = scope->init( scope_width, scope_height );
 	if ( !err_msg.empty() )
 		handle_error( err_msg.c_str() );
 	memset( scope_buf, 0, sizeof scope_buf );
-	
+
 	// Create player
-	player = new Music_Player;
+	player = GME_NEW Music_Player;
 	if ( !player )
 		handle_error( "Out of memory" );
 	handle_error( player->init() );
@@ -77,9 +77,9 @@ static void start_track( int track, const char* path )
 {
 	paused = false;
 	handle_error( player->start_track( track - 1 ) );
-	
+
 	// update window title with track info
-	
+
 	long seconds = player->track_info().length / 1000;
 	const char* game = player->track_info().game;
 	if ( !*game )
@@ -93,7 +93,7 @@ static void start_track( int track, const char* path )
 		else
 			game++; // skip path separator
 	}
-	
+
 	char title [512];
 	if ( 0 < snprintf( title, sizeof title, "%s: %d/%d %s (%ld:%02ld)",
 			game, track, player->track_count(), player->track_info().song,
@@ -106,7 +106,7 @@ static void start_track( int track, const char* path )
 int main( int argc, char** argv )
 {
 	init();
-	
+
 	bool by_mem = false;
 	const char* path = "test.nsf";
 
@@ -212,7 +212,7 @@ int main( int argc, char** argv )
 					printf( "%s\n", echo_disabled ? "SPC echo is disabled" : "SPC echo is enabled" );
 					fflush( stdout );
 					break;
-				
+
 				case SDL_SCANCODE_L: // toggle loop
 					player->set_fadeout( fading_out = !fading_out );
 					printf( "%s\n", fading_out ? "Will stop at track end" : "Playing forever" );
@@ -255,11 +255,11 @@ int main( int argc, char** argv )
 	// Cleanup
 	delete player;
 	delete scope;
-	
+
 	return 0;
 }
 
-void handle_error( const char* error )
+static void handle_error( const char* error )
 {
 	if ( error )
 	{
